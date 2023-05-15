@@ -1,0 +1,27 @@
+FROM node:18 as builder
+
+WORKDIR /app
+
+COPY package.json .
+COPY package-lock.json .
+
+RUN npm ci
+
+COPY .env .
+COPY next.config.js .
+COPY postcss.config.js .
+COPY tailwind.config.js .
+COPY public ./public
+COPY src ./src
+
+RUN npm run build
+
+FROM node:18 as product
+COPY ./.env .
+COPY ./package.json .
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/src ./src
+
+CMD [ "node_modules/.bin/next", "start" ]
